@@ -2,22 +2,15 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy configuration and workspace manifests
-COPY package.json package-lock.json tsconfig.base.json ./
+# Copy configuration and workspaces
+COPY package.json package-lock.json tsconfig.base.json vitest.config.ts polyfill-crypto.cjs ./
 COPY packages/ ./packages/
-COPY apps/api/ ./apps/api/
-COPY apps/student-pwa/package.json ./apps/student-pwa/package.json
-COPY apps/worker-node/package.json ./apps/worker-node/package.json
+COPY apps/ ./apps/
+COPY tools/ ./tools/
 
-# Install dependencies inside Linux container
+# Install dependencies and build monorepo
 RUN npm install
-
-# Compile packages sequentially
-RUN npx tsc -b packages/schemas
-RUN npx tsc -b packages/shuffle
-RUN npx tsc -b packages/scoring
-RUN npx tsc -b packages/db
-RUN npx tsc -b apps/api
+RUN npm run build
 
 FROM node:18-alpine AS runner
 WORKDIR /app

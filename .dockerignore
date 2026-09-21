@@ -28,3 +28,4 @@ caddy_data/
 # Ignore test logs and coverage
 coverage/
 npm-debug.log*
+

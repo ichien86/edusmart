@@ -86,7 +86,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     const { oldPassword, newPassword } = ChangePasswordRequestSchema.parse(request.body);
 
-    const user = await users.findOne({ _id: decoded.sub, schoolId: decoded.schoolId });
+    const user = await users.findOne({ _id: decoded.sub as any, schoolId: decoded.schoolId });
     if (!user) {
       throw new AppError(404, 'USER_NOT_FOUND', 'User Not Found', 'Pengguna tidak ditemukan.');
     }
@@ -98,7 +98,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     const newHash = await hashPassword(newPassword);
     await users.updateOne(
-      { _id: user._id },
+      { _id: user._id as any },
       {
         $set: {
           passwordHash: newHash,
