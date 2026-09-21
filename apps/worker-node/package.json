@@ -1,0 +1,21 @@
+{
+  "name": "@eduassess/worker-node",
+  "version": "1.0.0",
+  "main": "./dist/worker.js",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/worker.js"
+  },
+  "dependencies": {
+    "@eduassess/db": "^1.0.0",
+    "@eduassess/schemas": "^1.0.0",
+    "@eduassess/scoring": "^1.0.0",
+    "bullmq": "^5.1.5",
+    "ioredis": "^5.3.2",
+    "mongodb": "^6.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "typescript": "^5.3.3"
+  }
+}
