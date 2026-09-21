@@ -2,9 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Python requirements (FastAPI, SymPy CAS, Redis, Mongo, lxml)
+ENV PIP_PROGRESS_BAR=off
+ENV PYTHONUNBUFFERED=1
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --progress-bar off -r requirements.txt
 
 COPY . .
 
