@@ -2,14 +2,15 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package manifests
-COPY package.json package-lock.json tsconfig.base.json ./
+# Copy all workspaces for proper monorepo resolution
+COPY package.json package-lock.json tsconfig.base.json vitest.config.ts polyfill-crypto.cjs ./
 COPY packages/ ./packages/
-COPY apps/api/ ./apps/api/
+COPY apps/ ./apps/
+COPY tools/ ./tools/
 
-# Install dependencies and build
+# Install dependencies and compile
 RUN npm install
-RUN npm run build
+RUN npx tsc -b packages/schemas packages/shuffle packages/scoring packages/db apps/api
 
 FROM node:18-alpine AS runner
 WORKDIR /app
@@ -23,4 +24,3 @@ COPY --from=builder /app/apps/api ./apps/api
 
 EXPOSE 3000
 CMD ["node", "apps/api/dist/server.js"]
-

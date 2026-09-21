@@ -2,12 +2,13 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json tsconfig.base.json ./
+COPY package.json package-lock.json tsconfig.base.json vitest.config.ts polyfill-crypto.cjs ./
 COPY packages/ ./packages/
-COPY apps/worker-node/ ./apps/worker-node/
+COPY apps/ ./apps/
+COPY tools/ ./tools/
 
 RUN npm install
-RUN npm run build
+RUN npx tsc -b packages/schemas packages/shuffle packages/scoring packages/db apps/worker-node
 
 FROM node:18-alpine AS runner
 WORKDIR /app
@@ -20,4 +21,3 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/worker-node ./apps/worker-node
 
 CMD ["node", "apps/worker-node/dist/worker.js"]
-

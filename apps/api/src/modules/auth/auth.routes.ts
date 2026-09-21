@@ -16,21 +16,9 @@ const ChangePasswordRequestSchema = z.object({
   newPassword: z.string().min(8, 'Sandi baru minimal 8 karakter'),
 });
 
-export interface UserDocument {
-  _id: string;
-  schoolId: string;
-  username: string;
-  name: string;
-  passwordHash: string;
-  roles: string[];
-  isPasswordChanged?: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   const db = (fastify as any).mongoDb as Db;
-  const users = db.collection<UserDocument>('users');
+  const users = db.collection('users');
 
   // POST /api/v1/auth/login
   fastify.post('/auth/login', async (request, reply) => {
@@ -153,3 +141,4 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.status(200).send({ success: true });
   });
 };
+

@@ -200,3 +200,4 @@ export const bankRoutes: FastifyPluginAsync = async (fastify) => {
     });
   });
 };
+

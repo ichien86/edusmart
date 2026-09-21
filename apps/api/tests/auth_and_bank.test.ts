@@ -44,3 +44,4 @@ describe('Auth & Password Security Suite', () => {
     expect(decodedFull.scope).toBe('full');
   });
 });
+
