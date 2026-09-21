@@ -45,3 +45,4 @@ export const deliveryRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.status(200).send(result);
   });
 };
+

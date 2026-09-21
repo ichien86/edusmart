@@ -8,3 +8,4 @@ if (crypto.webcrypto && crypto.webcrypto.getRandomValues) {
   }
   globalThis.crypto.getRandomValues = getRandomValues;
 }
+

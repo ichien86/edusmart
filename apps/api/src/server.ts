@@ -3,6 +3,8 @@ import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { MongoClient } from 'mongodb';
 import { errorHandlerPlugin } from './plugins/error-handler.js';
+import { authRoutes } from './modules/auth/auth.routes.js';
+import { bankRoutes } from './modules/bank/bank.routes.js';
 import { deliveryRoutes } from './modules/delivery/delivery.routes.js';
 
 const PORT = Number(process.env.PORT || 3000);
@@ -44,6 +46,8 @@ export async function buildApp(mongoClient?: MongoClient) {
   });
 
   // 4. Register API v1 routes
+  await fastify.register(authRoutes, { prefix: '/api/v1' });
+  await fastify.register(bankRoutes, { prefix: '/api/v1' });
   await fastify.register(deliveryRoutes, { prefix: '/api/v1' });
 
   return fastify;
@@ -77,3 +81,4 @@ async function start() {
 if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
   start();
 }
+

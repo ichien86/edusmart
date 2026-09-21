@@ -20,3 +20,4 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/worker-node ./apps/worker-node
 
 CMD ["node", "apps/worker-node/dist/worker.js"]
+

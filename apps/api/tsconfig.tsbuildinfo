@@ -1,1 +1,1 @@
-{"root":["./src/server.ts","./src/modules/delivery/delivery.routes.ts","./src/modules/delivery/delivery.service.ts","./src/plugins/error-handler.ts"],"version":"5.9.3"}
+{"root":["./src/server.ts","./src/modules/auth/auth.routes.ts","./src/modules/auth/password.util.ts","./src/modules/auth/token.service.ts","./src/modules/bank/bank.routes.ts","./src/modules/delivery/delivery.routes.ts","./src/modules/delivery/delivery.service.ts","./src/plugins/error-handler.ts"],"version":"5.9.3"}

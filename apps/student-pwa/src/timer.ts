@@ -46,3 +46,4 @@ export function formatCountdown(ms: number): string {
   const pad = (n: number) => n.toString().padStart(2, '0');
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
+

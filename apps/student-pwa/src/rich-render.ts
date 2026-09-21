@@ -64,3 +64,4 @@ export function renderRichText(rt: RichText): { __html: string; dir: 'auto' | 'l
     lang: rt.lang || 'id',
   };
 }
+

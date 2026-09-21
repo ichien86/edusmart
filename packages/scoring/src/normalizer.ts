@@ -123,3 +123,4 @@ export function normArabic(s: string, options: ArabicNormalizeOptions = {}): str
 
   return t.replace(/\s+/g, ' ').trim();
 }
+

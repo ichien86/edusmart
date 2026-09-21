@@ -153,3 +153,4 @@ export class TenantRepo<T extends { schoolId: string }> {
     return this.collection.aggregate<R>([tenantMatch, ...pipeline]);
   }
 }
+

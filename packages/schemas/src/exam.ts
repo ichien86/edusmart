@@ -68,3 +68,4 @@ export const ExamSchema = z.object({
   updatedAt: z.date().or(z.string()),
 });
 export type Exam = z.infer<typeof ExamSchema>;
+

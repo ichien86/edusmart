@@ -64,3 +64,4 @@ export const StartExamResponseSchema = z.object({
   remainingMs: z.number(),
 });
 export type StartExamResponse = z.infer<typeof StartExamResponseSchema>;
+

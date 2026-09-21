@@ -55,3 +55,4 @@ export class EduAssessDexieDb extends Dexie {
 }
 
 export const localDb = new EduAssessDexieDb();
+

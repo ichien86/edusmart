@@ -128,3 +128,4 @@ export function assertNoSecretLeak(obj: unknown, path = ''): void {
     assertNoSecretLeak(value, currentPath);
   }
 }
+

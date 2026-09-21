@@ -80,3 +80,4 @@ export const errorHandlerPlugin: FastifyPluginAsync = async (fastify: FastifyIns
     return reply.status(statusCode).type('application/problem+json').send(problem);
   });
 };
+

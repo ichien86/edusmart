@@ -1,4 +1,4 @@
-import { localDb, type LocalAnswer } from './db.js';
+import { localDb } from './db.js';
 import type { SyncRequest, SyncResponse, SyncEvent } from '@eduassess/schemas';
 
 let inflight: Promise<void> | null = null;
@@ -61,7 +61,7 @@ async function doFlush(
     };
 
     try {
-      const res = await apiSyncFn(submissionId, payload);
+      await apiSyncFn(submissionId, payload);
 
       // 2. Mark answers clean ONLY if clientSeq didn't change during in-flight network call
       await localDb.transaction('rw', localDb.answers, async () => {
@@ -91,3 +91,4 @@ async function doFlush(
     }
   }
 }
+

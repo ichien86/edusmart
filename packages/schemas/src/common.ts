@@ -17,3 +17,4 @@ export const StimulusSchema = z.object({
 });
 
 export type Stimulus = z.infer<typeof StimulusSchema>;
+
