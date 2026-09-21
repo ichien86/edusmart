@@ -2,13 +2,22 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json tsconfig.base.json vitest.config.ts polyfill-crypto.cjs ./
+# Copy configuration and workspace manifests
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/ ./packages/
-COPY apps/ ./apps/
-COPY tools/ ./tools/
+COPY apps/worker-node/ ./apps/worker-node/
+COPY apps/student-pwa/package.json ./apps/student-pwa/package.json
+COPY apps/api/package.json ./apps/api/package.json
 
+# Install dependencies inside Linux container
 RUN npm install
-RUN npx tsc -b packages/schemas packages/shuffle packages/scoring packages/db apps/worker-node
+
+# Compile packages sequentially
+RUN npx tsc -b packages/schemas
+RUN npx tsc -b packages/shuffle
+RUN npx tsc -b packages/scoring
+RUN npx tsc -b packages/db
+RUN npx tsc -b apps/worker-node
 
 FROM node:18-alpine AS runner
 WORKDIR /app
