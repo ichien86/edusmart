@@ -1,0 +1,55 @@
+{
+  # Global options
+  admin off
+  auto_https off
+}
+
+:80 {
+  encode zstd gzip
+
+  # 1. Server-Sent Events (SSE) route for Proctor Live Dashboard
+  @sse path_regexp sse ^/api/v1/proctor/exams/[^/]+/live$
+  handle @sse {
+    reverse_proxy api:3000 {
+      flush_interval -1
+      transport http {
+        read_timeout 1h
+        write_timeout 1h
+      }
+    }
+  }
+
+  # 2. Large upload endpoints (Student imports & Question ingestion docx)
+  @upload path /api/v1/admin/imports /api/v1/ingestion/jobs
+  handle @upload {
+    request_body {
+      max_size 25MB
+    }
+    reverse_proxy api:3000
+  }
+
+  # 3. Standard API calls (Answer sync is limited to 256KB in app; 512KB for headers/body envelope)
+  handle /api/* {
+    request_body {
+      max_size 512KB
+    }
+    reverse_proxy api:3000
+  }
+
+  # 4. Staff web app
+  handle /staff/* {
+    root * /srv/staff-web
+    try_files {path} /staff/index.html
+    file_server
+  }
+
+  # 5. Student PWA (Root app)
+  handle {
+    root * /srv/student-pwa
+    header /index.html Cache-Control "no-cache"
+    header /sw.js      Cache-Control "no-cache"
+    header /assets/*   Cache-Control "public, max-age=31536000, immutable"
+    try_files {path} /index.html
+    file_server
+  }
+}

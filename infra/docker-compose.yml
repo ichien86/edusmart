@@ -1,0 +1,131 @@
+version: "3.8"
+
+services:
+  proxy:
+    image: caddy:2-alpine
+    container_name: eduassess-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - ../apps/student-pwa/dist:/srv/student-pwa:ro
+      - ../apps/staff-web/dist:/srv/staff-web:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    container_name: eduassess-api
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    depends_on:
+      - mongo
+      - redis
+      - minio
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  worker-node:
+    build:
+      context: ..
+      dockerfile: apps/worker-node/Dockerfile
+    container_name: eduassess-worker-node
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - redis
+      - minio
+    restart: unless-stopped
+
+  worker-py:
+    build:
+      context: ../services/worker-py
+      dockerfile: Dockerfile
+    container_name: eduassess-worker-py
+    env_file:
+      - .env
+    networks:
+      - internal_only
+    depends_on:
+      - mongo
+      - redis
+      - minio
+      - clamav
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    container_name: eduassess-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: test $$(echo "rs.status().ok || rs.initiate().ok" | mongosh --quiet) -eq 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: eduassess-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2023-11-20T22-40-07Z
+    container_name: eduassess-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  clamav:
+    image: clamav/clamav:stable
+    container_name: eduassess-clamav
+    networks:
+      - internal_only
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  mongo_data:
+  redis_data:
+  minio_data:
+
+networks:
+  default:
+  internal_only:
+    internal: true
