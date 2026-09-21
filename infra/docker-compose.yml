@@ -1,9 +1,9 @@
 version: "3.8"
 
 services:
-  proxy:
+  caddy:
     image: caddy:2-alpine
-    container_name: eduassess-proxy
+    container_name: eduassess-caddy
     ports:
       - "80:80"
       - "443:443"
