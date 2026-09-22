@@ -91,6 +91,7 @@ export const RubricCriterionSchema = z.object({
   aspect: z.string(),
   weight: z.number().min(1).max(100),
 });
+export type RubricCriterion = z.infer<typeof RubricCriterionSchema>;
 export const EssayPayloadSchema = z.object({
   rubric: z.array(RubricCriterionSchema).min(1),
   idealAnswer: RichTextSchema.optional(),

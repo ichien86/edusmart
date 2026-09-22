@@ -12,6 +12,13 @@ import {
   assertNoSecretLeak,
 } from '@eduassess/schemas';
 import { seededShuffle, maybeShuffle } from '@eduassess/shuffle';
+import {
+  scoreSingleChoice,
+  scoreMultipleChoice,
+  scoreTrueFalse,
+  scoreMatching,
+  scoreShortAnswer,
+} from '@eduassess/scoring';
 import { AppError } from '../../plugins/error-handler.js';
 
 export interface StartExamOptions {
@@ -421,10 +428,164 @@ export class DeliveryService {
       throw new AppError(404, 'SUBMISSION_NOT_FOUND', 'Submission Not Found', 'Submission does not exist.');
     }
 
+    // Asynchronously grade objective questions and enqueue essay questions for AI evaluation
+    this.gradeSubmission(schoolId, submissionId).catch((err) => {
+      console.error(`Error auto-grading submission ${submissionId}:`, err);
+    });
+
     return {
       status: res.status,
       submittedAt: now.toISOString(),
     };
+  }
+
+  /**
+   * Automatic grading of objective questions & AI evaluation dispatch for essays
+   */
+  async gradeSubmission(schoolId: string, submissionId: string): Promise<void> {
+    const sub = await this.submissions.findOne({ _id: submissionId, schoolId } as Filter<Submission>);
+    if (!sub) return;
+
+    const exam = await this.exams.findOne({ _id: sub.examId, schoolId } as Filter<Exam>);
+    const pointsMap = new Map<string, number>();
+    if (exam && Array.isArray(exam.questionRefs)) {
+      for (const it of exam.questionRefs) {
+        pointsMap.set(it.questionId, it.points || 10);
+      }
+    }
+
+    const answers = await this.answers.find({ schoolId, submissionId } as Filter<Answer>).toArray();
+    let objectiveTotal = 0;
+    let maxTotal = 0;
+
+    for (const ans of answers) {
+      const q = await this.questions.findOne({ _id: ans.questionId, schoolId } as Filter<Question>);
+      if (!q) continue;
+
+      const maxPoints = pointsMap.get(ans.questionId) || 10;
+      maxTotal += maxPoints;
+
+      if (q.type === 'single_choice') {
+        const score = scoreSingleChoice(q.payload as any, { selected: ans.inputData?.selected }, maxPoints);
+        objectiveTotal += score;
+        await this.answers.updateOne(
+          { _id: ans._id, schoolId } as Filter<Answer>,
+          {
+            $set: {
+              'evaluation.method': 'auto',
+              'evaluation.state': 'auto_done',
+              'evaluation.score': score,
+              'evaluation.finalScore': score,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      } else if (q.type === 'multiple_choice') {
+        const score = scoreMultipleChoice(q.payload as any, { selectedOptions: ans.inputData?.selectedOptions }, maxPoints);
+        objectiveTotal += score;
+        await this.answers.updateOne(
+          { _id: ans._id, schoolId } as Filter<Answer>,
+          {
+            $set: {
+              'evaluation.method': 'auto',
+              'evaluation.state': 'auto_done',
+              'evaluation.score': score,
+              'evaluation.finalScore': score,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      } else if (q.type === 'true_false') {
+        const score = scoreTrueFalse(q.payload as any, { statements: ans.inputData?.statements }, maxPoints);
+        objectiveTotal += score;
+        await this.answers.updateOne(
+          { _id: ans._id, schoolId } as Filter<Answer>,
+          {
+            $set: {
+              'evaluation.method': 'auto',
+              'evaluation.state': 'auto_done',
+              'evaluation.score': score,
+              'evaluation.finalScore': score,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      } else if (q.type === 'matching') {
+        const score = scoreMatching(q.payload as any, { pairs: ans.inputData?.pairs }, maxPoints);
+        objectiveTotal += score;
+        await this.answers.updateOne(
+          { _id: ans._id, schoolId } as Filter<Answer>,
+          {
+            $set: {
+              'evaluation.method': 'auto',
+              'evaluation.state': 'auto_done',
+              'evaluation.score': score,
+              'evaluation.finalScore': score,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      } else if (q.type === 'short_answer') {
+        const result = scoreShortAnswer(q.payload as any, { text: ans.inputData?.text }, maxPoints);
+        const score = result.score;
+        objectiveTotal += score;
+        await this.answers.updateOne(
+          { _id: ans._id, schoolId } as Filter<Answer>,
+          {
+            $set: {
+              'evaluation.method': 'auto',
+              'evaluation.state': 'auto_done',
+              'evaluation.score': score,
+              'evaluation.finalScore': score,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      } else if (q.type === 'essay') {
+        await this.answers.updateOne(
+          { _id: ans._id, schoolId } as Filter<Answer>,
+          {
+            $set: {
+              'evaluation.method': 'ai_assisted',
+              'evaluation.state': 'pending_ai',
+              updatedAt: new Date(),
+            },
+          }
+        );
+
+        try {
+          const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+          const { Queue } = await import('bullmq');
+          const queue = new Queue('essay-evaluation', { connection: { url: redisUrl } as any });
+          await queue.add(
+            'eval',
+            {
+              schoolId,
+              submissionId,
+              answerId: ans._id,
+              questionId: ans.questionId,
+            },
+            { removeOnComplete: true }
+          );
+          await queue.close();
+        } catch (queueErr) {
+          console.error(`Failed to enqueue essay evaluation for answer ${ans._id}:`, queueErr);
+        }
+      }
+    }
+
+    const percentage = maxTotal > 0 ? Math.round((objectiveTotal / maxTotal) * 1000) / 10 : 0;
+    await this.submissions.updateOne(
+      { _id: submissionId, schoolId } as Filter<Submission>,
+      {
+        $set: {
+          'scores.objective': objectiveTotal,
+          'scores.total': objectiveTotal,
+          'scores.percentage': percentage,
+          updatedAt: new Date(),
+        },
+      }
+    );
   }
 }
 

@@ -7,6 +7,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { bankRoutes } from './modules/bank/bank.routes.js';
 import { deliveryRoutes } from './modules/delivery/delivery.routes.js';
 import { proctorRoutes } from './modules/proctor/proctor.routes.js';
+import { gradingRoutes } from './modules/grading/grading.routes.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/eduassess?replicaSet=rs0';
@@ -51,6 +52,7 @@ export async function buildApp(mongoClient?: MongoClient) {
   await fastify.register(bankRoutes, { prefix: '/api/v1' });
   await fastify.register(deliveryRoutes, { prefix: '/api/v1' });
   await fastify.register(proctorRoutes, { prefix: '/api/v1/proctor' });
+  await fastify.register(gradingRoutes, { prefix: '/api/v1/grading' });
 
   return fastify;
 }

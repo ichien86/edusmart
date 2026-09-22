@@ -507,5 +507,9 @@ describe('Auth & Password Security Suite', () => {
   });
 });
 
+// Import Phase 2 Live Proctoring & Phase 3 AI Evaluation Suites
+await import('./test-phase2-proctoring.mjs');
+await import('./test-phase3-ai-eval.mjs');
+
 // Run all test suites asynchronously
 await runAllTests();
