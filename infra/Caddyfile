@@ -37,9 +37,9 @@
   }
 
   # 4. Staff web app
-  handle /staff/* {
+  handle_path /staff* {
     root * /srv/staff-web
-    try_files {path} /staff/index.html
+    try_files {path} /index.html
     file_server
   }
 

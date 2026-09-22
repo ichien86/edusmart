@@ -44,5 +44,36 @@ export const deliveryRoutes: FastifyPluginAsync = async (fastify) => {
 
     return reply.status(200).send(result);
   });
+
+  // POST /api/v1/student/submissions/:id/heartbeat (§8.3 ADR-08)
+  fastify.post('/student/submissions/:id/heartbeat', async (request, reply) => {
+    const studentId = (request.headers['x-student-id'] as string) || 'student_test_1';
+    const schoolId = (request.headers['x-school-id'] as string) || 'school_test_1';
+    const submissionId = (request.params as any).id;
+    const body = (request.body as any) || {};
+
+    const { PresenceService } = await import('../proctor/presence.service.js');
+    const presenceService = new PresenceService();
+
+    let examId = body.examId;
+    if (!examId) {
+      const sub = await db.collection('submissions').findOne({ _id: submissionId });
+      examId = sub?.examId || 'EXAM-DEFAULT';
+    }
+
+    await presenceService.recordHeartbeat(examId, studentId, {
+      submissionId,
+      studentName: body.studentName,
+      nis: body.nis,
+      answeredCount: body.answeredCount,
+      totalQuestions: body.totalQuestions,
+      integrityEvent: body.integrityEvent,
+    });
+
+    return reply.status(200).send({
+      status: 'ok',
+      serverTime: new Date().toISOString(),
+    });
+  });
 };
 

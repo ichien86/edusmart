@@ -6,4 +6,5 @@ sympy==1.12
 pydantic==2.6.4
 lxml==5.1.0
 defusedxml==0.7.1
+python-multipart==0.0.9
 

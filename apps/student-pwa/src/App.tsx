@@ -63,6 +63,61 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // 2b. Periodic Heartbeat & Tab Blur Integrity Listener (§8.3 ADR-08)
+  useEffect(() => {
+    if (!session || isSubmitted) return;
+
+    const sendHeartbeat = async (integrityEvent: 'normal' | 'tab_blur' = 'normal') => {
+      try {
+        const answeredCount = Object.values(answers).filter((a) => {
+          if (!a) return false;
+          return a.selected || (a.selectedOptions && a.selectedOptions.length > 0) || a.text || a.formulaLatex;
+        }).length;
+
+        await fetch(`/api/v1/student/submissions/${session.submissionId}/heartbeat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            answeredCount,
+            totalQuestions: session.questions.length,
+            integrityEvent,
+          }),
+        });
+      } catch {
+        // Abaikan kegagalan heartbeat saat jaringan putus
+      }
+    };
+
+    // Heartbeat berkala tiap 15 detik
+    const hbInterval = setInterval(() => sendHeartbeat('normal'), 15000);
+    sendHeartbeat('normal');
+
+    // Deteksi siswa pindah tab / meminimalkan jendela
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        sendHeartbeat('tab_blur');
+      } else {
+        sendHeartbeat('normal');
+      }
+    };
+
+    const handleWindowBlur = () => {
+      sendHeartbeat('tab_blur');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+
+    return () => {
+      clearInterval(hbInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [session, isSubmitted, answers, token]);
+
   // 3. Login Handler
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
